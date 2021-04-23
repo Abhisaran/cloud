@@ -10,7 +10,8 @@ def settings():
 
 @app.route('/')
 def hello_world():
-    return render_template('index.html')
+    context = {'content':model.check_dynamo()}
+    return render_template('index.html', context=context)
 
 
 if __name__ == '__main__':
