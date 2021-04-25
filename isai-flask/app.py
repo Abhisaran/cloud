@@ -1,7 +1,11 @@
 from flask import Flask, render_template, redirect, url_for, request, jsonify
 import model
+import logging
 
 app = Flask(__name__)
+
+logging.basicConfig(level=logging.DEBUG,
+                    format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
 
 def settings():
@@ -10,7 +14,7 @@ def settings():
 
 @app.route('/')
 def hello_world():
-    context = {'content':model.check_dynamo()}
+    context = {'content': model.assert_dynamo()}
     return render_template('index.html', context=context)
 
 
