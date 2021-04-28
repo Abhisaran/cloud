@@ -1,0 +1,77 @@
+/*#content {*/
+/*    display: none;*/
+/*}*/
+
+/*#loading {*/
+/*    top: 200px;*/
+/*    margin: auto;*/
+/*    position: absolute;*/
+/*    z-index: 1000;*/
+/*    width: 160px;*/
+/*    height: 24px;*/
+/*    background: url(/isai-flask/loading.gif) no-repeat;*/
+/*    cursor: wait;*/
+/*}*/
+#user{
+    background-color: aliceblue;
+    min-height: 10vh;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+#subscription{
+    background-color: darksalmon;
+    min-height: 60vh;
+}
+
+#query{
+    background-color: antiquewhite;
+    min-height: 30vh;
+}
+
+img{
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.subscription-area{
+    /*margin: 20px 10px;*/
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+.music-container{
+    display: flex;
+    flex-direction: row;
+    justify-content: left;
+}
+
+.left-music-container{
+    width: 20%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.right-music-container{
+    width: 70%;
+    display: flex;
+    flex-direction: column;
+}
+
+.rightmost{
+    width: 10%;
+    display: flex;
+    flex-direction: column;
+}
+
+hr {
+    height: 1px;
+    min-width: 100vw;
+    color: #333333;
+    background-color: #333333;
+}

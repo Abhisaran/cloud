@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Main Page</title>
+    <script src="{{url_for('static', filename='js/main.js')}}"></script>
+        <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/main.css') }}">
+</head>
+<body>
+<div id="user">
+    <h2>Welcome to the music subscription page</h2>
+    <h2>Welcome {{context.user.user_name}}</h2>
+    <a href="/logout/{{context.session}}">Logout</a>
+</div>
+<!--<hr>-->
+<div id="subscription">
+    <h2>Subscribed music!</h2>
+    {% if context.new_music %}
+    <p>{{context.new_music}}</p>
+    {% endif %}
+    {% if context.sub_list %}
+    {% for sub in context.sub_list %}
+    <!--    <p>{{sub}}</p>-->
+    <div class="subscription-area">
+        <div class="music-container">
+            <div class="left-music-container">
+                <img src="{{sub.img_url}}" alt="Image">
+                <p>{{sub.title}}</p>
+            </div>
+            <div class="right-music-container">
+                <p>{{sub.artist}}</p>
+                <p>{{sub.year}}</p>
+                <a href="{{sub.web_url}}">Song URL</a>
+            </div>
+        <a class="rightmost" href="/main/unsubscribe/{{context.session}}/{{sub.id}}">Remove</a>
+        </div>
+        <hr>
+        {% endfor %}
+        {% else %}
+    </div>
+    <p>No songs subscribed yet!</p>
+    {% endif %}
+</div>
+<!--<hr>-->
+<div id="query">
+    <div id="query-form">
+        <form action="" method="post">
+            <h2 class="text-center">Search for your favourite music!</h2>
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="title" name="title"
+                       value="{{request.form.title }}">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="only numbers!!" name="year"
+                       value="{{request.form.year}}">
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-control" placeholder="artist" name="artist"
+                       value="{{request.form.artist }}">
+            </div>
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary btn-block" value="query">Query</button>
+            </div>
+        </form>
+    </div>
+<!--    <hr>-->
+    <div id="query-display">
+        {% if context.query_list %}
+        {% for query in context.query_list %}
+        <div class="subscription-area">
+            <div class="music-container">
+                <div class="left-music-container">
+                    <img src="{{query.img_url}}" alt="Image">
+                    <p>{{query.title}}</p>
+                </div>
+                <div class="right-music-container">
+                    <p>{{query.artist}}</p>
+                    <p>{{query.year}}</p>
+                    <a href="{{query.web_url}}">Song URL</a>
+                </div>
+                <a class="rightmost" href="/main/subscribe/{{context.session}}/{{query.id}}">Subscribe</a>
+            </div>
+            <hr>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p>No result is retrieved. Please query again!</p>
+        {% endif %}
+    </div>
+</div>
+</body>
+</html>
