@@ -25,6 +25,8 @@ def index():
 @app.route('/login', methods=['GET', 'POST'], defaults={'error': None})
 @app.route('/login/<string:error>', methods=['GET', 'POST'])
 def login(error):
+    app.logger.debug('app.py login BEGIN')
+    app.logger.info('app.py login error: %s', error)
     context = {'error': error}
     if request.method == 'POST':
         app.logger.info("login POST request: %s", request)
@@ -36,6 +38,7 @@ def login(error):
             error = "Email or password is invalid"
             context = {'error': error}
     print("LOGIN", context)
+    app.logger.debug('app.py login END')
     return render_template('login.html', context=context)
 
 
@@ -43,9 +46,12 @@ def login(error):
 @app.route('/main/<string:session>', methods=['GET', 'POST'])
 # @app.route('/main/<string:session>/<string:>', methods=['GET', 'POST'])
 def main(session):
+    app.logger.debug('app.py main BEGIN')
     if session is None:
+        app.logger.debug('app.py main END')
         return redirect(url_for('login', error='Please login first'))
     if not model.validate_session(session):
+        app.logger.debug('app.py main END')
         return redirect(
             url_for('login', error='Unauthenticated access detected, this user has been reported'))
     new_music = None
@@ -67,17 +73,20 @@ def main(session):
     user_dict = model.get_user_from_session(session)
     context = {'content': "Hello there", 'user': user_dict, 'session': session, 'query_list': query_list,
                'sub_list': sub_list, 'new_music': new_music}
+    app.logger.debug('app.py main END')
     return render_template('main.html', context=context)
 
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    app.logger.debug('app.py register BEGIN')
     error = None
     if request.method == 'POST':
         if not model.validate_user_email(request.form['email']):
             if model.create_new_user(request.form['email'], request.form['username'],
                                      request.form['password']):
                 print("New user created")
+                app.logger.debug('app.py register END')
                 return redirect(url_for('login', error='New user created, try logging in'))
             else:
                 print("Unexpected error user creation")
@@ -85,6 +94,7 @@ def register():
         else:
             error = "Email already exists"
     context = {'content': "Hello there", 'error': error}
+    app.logger.debug('app.py register END')
     return render_template('register.html', context=context)
 
 
