@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 
+if __name__ != '__main__':
+    gunicorn_error_logger = logging.getLogger('gunicorn.error')
+    current_app.logger.handlers.extend(gunicorn_error_logger.handlers)
+    current_app.logger.setLevel(logging.DEBUG)
+
 dynamodb_client = None
 dynamodb_resource = None
 existing_tables = None
@@ -332,7 +337,8 @@ def remove_session(session_id):
 
 
 def validate_session(session_id):
-    current_app.logger.debug('model.py validate_session')
+    current_app.logger.debug('model.py validate_session %s', session_id)
+    current_app.logger.info('model.py validate_session %s', session_id in session_dict)
     return session_id in session_dict
 
 

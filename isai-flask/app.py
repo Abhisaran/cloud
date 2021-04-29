@@ -8,16 +8,18 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(levelname)s %(name)s %(threadName)s : %(message)s')
 app.logger.debug('app.py logging BEGIN')
 
-if __name__ != '__main__':
-    app.logger.debug('app.py !__main__ BEGIN')
-    gunicorn_error_logger = logging.getLogger('gunicorn.error')
-    app.logger.handlers.extend(gunicorn_error_logger.handlers)
-    app.logger.setLevel(logging.DEBUG)
-
 
 def settings():
     app.logger.debug('app.py settings')
     return model.init_boto3()
+
+
+if __name__ != '__main__':
+    settings()
+    app.logger.debug('app.py !__main__ BEGIN')
+    gunicorn_error_logger = logging.getLogger('gunicorn.error')
+    app.logger.handlers.extend(gunicorn_error_logger.handlers)
+    app.logger.setLevel(logging.DEBUG)
 
 
 @app.errorhandler(404)
