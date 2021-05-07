@@ -2,6 +2,7 @@ from flask import Flask, render_template, redirect, url_for, request, jsonify
 import model
 import logging
 
+
 app = Flask(__name__)
 
 logging.basicConfig(level=logging.DEBUG,
@@ -71,7 +72,7 @@ def main(session):
     if 'new_music' in request.args:
         new_music = request.args['new_music']
     query_list = []
-    uid_sub_list = model.get_sub_list(session)
+    uid_sub_list = model.get_user_from_session(session).get('sub_list')
     sub_list = []
     if uid_sub_list:
         for uid in uid_sub_list:
@@ -157,7 +158,6 @@ def logout(session):
         error = 'Please login first'
     if not model.validate_session(session):
         error = 'Unauthenticated access detected, this user has been reported'
-    model.remove_session(session)
     app.logger.debug('app.py logout END %s', error)
     return redirect(url_for('login', error=error))
 

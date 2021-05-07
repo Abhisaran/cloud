@@ -4,10 +4,7 @@ import logging
 import json
 import os
 import requests
-from boto3.dynamodb.conditions import Key, Attr
-from flask import Flask
-
-current_app = Flask(__name__)
+from boto3.dynamodb.conditions import Attr
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO,
@@ -15,55 +12,58 @@ logging.basicConfig(level=logging.INFO,
 
 if __name__ != '__main__':
     gunicorn_error_logger = logging.getLogger('gunicorn.error')
-    current_app.logger.handlers.extend(gunicorn_error_logger.handlers)
-    current_app.logger.setLevel(logging.DEBUG)
-
-dynamodb_client = None
-dynamodb_resource = None
-existing_tables = None
-boto_init_status = None
-login_table = None
-music_table = None
-s3_client = None
-s3_resource = None
-session_dict = {}
+    logger.handlers.extend(gunicorn_error_logger.handlers)
+    logger.setLevel(logging.DEBUG)
 
 
 def init_boto3():
-    current_app.logger.debug('model.py init_boto3 BEGIN')
-    # current_app.logger.info('model.py init_boto3 error: %s', error)
-    global dynamodb_client, dynamodb_resource, boto_init_status, existing_tables, s3_client, s3_resource
+    logger.debug('model.py init_boto3 BEGIN')
     dynamodb_client = boto3.client('dynamodb')
     dynamodb_resource = boto3.resource('dynamodb')
     s3_client = boto3.client('s3')
     s3_resource = boto3.resource('s3')
-    current_app.logger.info(
+    logger.info(
         'model.py init_boto3 dynamodb_client, dynamodb_resource, s3_client, s3_resource: %s %s %s %s',
         dynamodb_client, dynamodb_resource,
         s3_client, s3_resource)
-    check_existing_tables()
-    boto_init_status = True
-    assert_dynamo()
-    current_app.logger.debug('model.py init_boto3 END')
+    bucket_list = []
+    for s in s3_client.list_buckets().get('Buckets'):
+        bucket_list.append(s.get('Name'))
+    existing_tables = dynamodb_client.list_tables()['TableNames']
+    logger.info('model.py init_boto3 existing, buckets: %s %s', existing_tables, bucket_list)
+    if 'login' not in existing_tables:
+        if not assert_dynamo_login_table(dynamodb_client, dynamodb_resource):
+            logger.debug('model.py assert_dynamo Unexpected error, try again END')
+        return False
+    if 'music' not in existing_tables:
+        if not assert_dynamo_music_table(dynamodb_client, dynamodb_resource, s3_client):
+            logger.debug('model.py assert_dynamo Unexpected error, try again END')
+            return False
+    if 'abhi-dev-music-images' not in bucket_list:
+        if not assert_s3_bucket(s3_client):
+            logger.debug('model.py assert_dynamo Unexpected error, try again END')
+            return False
+
+    logger.debug('model.py init_boto3 END')
     return True
 
 
-def check_existing_tables():
-    current_app.logger.debug('model.py check_existing_tables BEGIN')
-    global existing_tables
-    existing_tables = dynamodb_client.list_tables()['TableNames']
-    current_app.logger.info('model.py check_existing_tables error: %s', existing_tables)
-    current_app.logger.debug('model.py check_existing_tables END')
+#
+# def check_existing_tables():
+#     logger.debug('model.py check_existing_tables BEGIN')
+#     existing_tables = boto3.client('dynamodb').list_tables()['TableNames']
+#     logger.info('model.py check_existing_tables error: %s', existing_tables)
+#     logger.debug('model.py check_existing_tables END')
+#     return existing_tables
 
-
-def insert_defaults_login_table():
-    current_app.logger.debug('model.py insert_defaults_login_table BEGIN')
+def insert_defaults_login_table(client):
+    logger.debug('model.py insert_defaults_login_table BEGIN')
     for i in range(10):
         email = 's3813265' + str(i) + '@student.rmit.edu.au'
         user_name = 'abhis' + str(i)
         pswd = str(i) + str((i + 1) % 10) + str((i + 2) % 10) + str((i + 3) % 10) + str((i + 4) % 10) + str(
             (i + 5) % 10)
-        item = dynamodb_client.put_item(
+        client.put_item(
             TableName='login',
             Item={
                 'id': {
@@ -78,17 +78,14 @@ def insert_defaults_login_table():
                 'pass': {
                     'S': pswd,
                 },
-                'sub_list': {
-                    'SS': [''],
-                },
             }
         )
-    current_app.logger.debug('model.py insert_defaults_login_table END')
+    logger.debug('model.py insert_defaults_login_table END')
     return True
 
 
-def insert_defaults_music_table():
-    current_app.logger.debug('model.py insert_defaults_music_table BEGIN')
+def insert_defaults_music_table(client, s3):
+    logger.debug('model.py insert_defaults_music_table BEGIN')
     f = open('a2.json')
     data = json.load(f)
     for item in data['songs']:
@@ -98,8 +95,8 @@ def insert_defaults_music_table():
         web_url = item.get('web_url')
         uid = str(uuid.uuid4().hex)
         img_url = item.get('img_url')
-        img_url = download_all_images_from_json_to_bucket(img_url, uid)
-        item = dynamodb_client.put_item(
+        img_url = download_all_images_from_json_to_bucket(s3, img_url, uid)
+        client.put_item(
             TableName='music',
             Item={
                 'id': {
@@ -122,277 +119,265 @@ def insert_defaults_music_table():
                 },
             }
         )
-    current_app.logger.debug('model.py insert_defaults_music_table END')
+    logger.debug('model.py insert_defaults_music_table END')
     return True
 
 
-def download_all_images_from_json_to_bucket(url, uid):
-    current_app.logger.debug('model.py download_all_images_from_json_to_bucket BEGIN')
+def download_all_images_from_json_to_bucket(client, url, uid):
+    logger.debug('model.py download_all_images_from_json_to_bucket BEGIN')
     response = requests.get(url)
-    current_app.logger.debug('model.py download_all_images_from_json_to_bucket %s', response)
+    logger.debug('model.py download_all_images_from_json_to_bucket %s', response)
     file = open("temp.jpg", "wb")
     file.write(response.content)
     file.close()
-    s3_client.upload_file('temp.jpg', 'abhi-dev-music-images', uid + '.jpg', ExtraArgs={'ACL': 'public-read'})
+    client.upload_file('temp.jpg', 'abhi-dev-music-images', uid + '.jpg',
+                       ExtraArgs={'ACL': 'public-read'})
     os.remove('temp.jpg')
     return 'https://abhi-dev-music-images.s3-ap-southeast-2.amazonaws.com/' + uid + '.jpg'
 
 
-def assert_s3_bucket():
-    current_app.logger.debug('model.py assert_s3_bucket BEGIN')
-    bucket_list = []
-    for s in s3_client.list_buckets().get('Buckets'):
-        bucket_list.append(s.get('Name'))
-    if 'abhi-dev-music-images' in bucket_list:
-        current_app.logger.debug('model.py assert_s3_bucket S3 found')
-        current_app.logger.debug('model.py assert_s3_bucket END')
-        return True
-    else:
-        response = s3_client.create_bucket(
-            ACL='public-read',
-            Bucket='abhi-dev-music-images1',
-            CreateBucketConfiguration={
-                'LocationConstraint': 'ap-southeast-2'
+def assert_s3_bucket(client):
+    logger.debug('model.py assert_s3_bucket BEGIN')
+    client.create_bucket(
+        ACL='public-read',
+        Bucket='abhi-dev-music-images1',
+        CreateBucketConfiguration={
+            'LocationConstraint': 'ap-southeast-2'
+        },
+        ObjectLockEnabledForBucket=False
+    )
+    logger.debug('model.py assert_s3_bucket END')
+    return True
+
+
+def assert_dynamo_login_table(client, resource):
+    logger.debug('model.py assert_dynamo_login_table BEGIN')
+    logger.debug('model.py assert_dynamo_login_table Table does not exist')
+    login_table = resource.create_table(
+        TableName='login',
+        KeySchema=[
+            {
+                'AttributeName': 'email',
+                'KeyType': 'HASH'
             },
-            ObjectLockEnabledForBucket=False
-        )
-        current_app.logger.debug('model.py assert_s3_bucket END')
-        return True
-
-
-def assert_dynamo_login_table():
-    current_app.logger.debug('model.py assert_dynamo_login_table BEGIN')
-    if not boto_init_status:
-        current_app.logger.debug('model.py assert_dynamo_login_table Unexpected boto_init_status')
-        return False
-    table_name = 'login'
-    global login_table
-    check_existing_tables()
-    if table_name not in existing_tables:
-        current_app.logger.debug('model.py assert_dynamo_login_table Table does not exist')
-        login_table = dynamodb_resource.create_table(
-            TableName='login',
-            KeySchema=[
-                {
-                    'AttributeName': 'email',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'email',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            }
-        )
-        dynamodb_client.get_waiter('table_exists').wait(TableName='login')
-        current_app.logger.info('model.py assert_dynamo_login_table login table: %s', login_table)
-        if login_table is None:
-            current_app.logger.debug(
-                'model.py assert_dynamo_login_table Unexpected failure, login table not created')
-        else:
-            current_app.logger.debug('model.py assert_dynamo_login_table Table login is created')
-            insert_defaults_login_table()
+        ],
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'email',
+                'AttributeType': 'S'
+            },
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        }
+    )
+    client.get_waiter('table_exists').wait(TableName='login')
+    logger.info('model.py assert_dynamo_login_table login table: %s', login_table)
+    if login_table is None:
+        logger.debug(
+            'model.py assert_dynamo_login_table Unexpected failure, login table not created')
     else:
-        login_table = dynamodb_resource.Table(table_name)
-        logger.info("model.py assert_dynamo_login_table login_table.table_status: %s",
-                    login_table.table_status)
-    current_app.logger.debug('model.py assert_dynamo_music_table END')
+        logger.debug('model.py assert_dynamo_login_table Table login is created')
+        insert_defaults_login_table(client)
+    logger.debug('model.py assert_dynamo_music_table END')
     return True
 
 
-def assert_dynamo_music_table():
-    current_app.logger.debug('model.py assert_dynamo_music_table BEGIN')
-    if boto_init_status != True:
-        current_app.logger.debug('model.py assert_dynamo_music_table Unexpected boto_init_status')
-        return False
-    table_name = 'music'
-    global music_table
-    check_existing_tables()
-    if table_name not in existing_tables:
-        current_app.logger.debug('model.py assert_dynamo_music_table Table does not exist')
-        music_table = dynamodb_resource.create_table(
-            TableName='music',
-            KeySchema=[
-                {
-                    'AttributeName': 'id',
-                    'KeyType': 'HASH'
-                },
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'id',
-                    'AttributeType': 'S'
-                },
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 5,
-                'WriteCapacityUnits': 5
-            }
-        )
-        dynamodb_client.get_waiter('table_exists').wait(TableName='music')
-        current_app.logger.info('model.py assert_dynamo_music_table music table: %s', music_table)
-        if music_table is None:
-            current_app.logger.debug(
-                'model.py assert_dynamo_music_table Unexpected failure, music table not created')
-        else:
-            current_app.logger.debug('model.py assert_dynamo_music_table music table created')
-            insert_defaults_music_table()
+def assert_dynamo_music_table(client, resource, s3):
+    logger.debug('model.py assert_dynamo_music_table BEGIN')
+    logger.debug('model.py assert_dynamo_music_table Table does not exist')
+    music_table = resource.create_table(
+        TableName='music',
+        KeySchema=[
+            {
+                'AttributeName': 'id',
+                'KeyType': 'HASH'
+            },
+        ],
+        AttributeDefinitions=[
+            {
+                'AttributeName': 'id',
+                'AttributeType': 'S'
+            },
+        ],
+        ProvisionedThroughput={
+            'ReadCapacityUnits': 5,
+            'WriteCapacityUnits': 5
+        }
+    )
+    client.get_waiter('table_exists').wait(TableName='music')
+    logger.info('model.py assert_dynamo_music_table music table: %s', music_table)
+    if music_table is None:
+        logger.debug(
+            'model.py assert_dynamo_music_table Unexpected failure, music table not created')
     else:
-        music_table = dynamodb_resource.Table(table_name)
-        current_app.logger.debug('model.py assert_dynamo_music_table music table status: %s',
-                                 music_table.table_status)
-        current_app.logger.debug('model.py assert_dynamo_music_table END')
+        logger.debug('model.py assert_dynamo_music_table music table created')
+        insert_defaults_music_table(client, s3)
+    logger.debug('model.py assert_dynamo_music_table END')
     return True
 
 
-def assert_dynamo():
-    current_app.logger.debug('model.py assert_dynamo START')
-    if not assert_dynamo_login_table():
-        current_app.logger.debug('model.py assert_dynamo Unexpected error, try again END')
-        return False
-    if not assert_dynamo_music_table():
-        current_app.logger.debug('model.py assert_dynamo Unexpected error, try again END')
-        return False
-    if not assert_s3_bucket():
-        current_app.logger.debug('model.py assert_dynamo Unexpected error, try again END')
-        return False
-    current_app.logger.debug('model.py assert_dynamo END')
-    return True
+#
+# def assert_dynamo(existing_tables):
+#     logger.debug('model.py assert_dynamo START')
+#     if 'login' not in existing_tables:
+#         if not assert_dynamo_login_table():
+#             logger.debug('model.py assert_dynamo Unexpected error, try again END')
+#         return False
+#     if 'music' not in existing_tables:
+#         if not assert_dynamo_music_table():
+#             logger.debug('model.py assert_dynamo Unexpected error, try again END')
+#             return False
+#     if 'login' not in existing_tables:
+#         if not assert_s3_bucket():
+#             logger.debug('model.py assert_dynamo Unexpected error, try again END')
+#             return False
+#     logger.debug('model.py assert_dynamo END')
+#     return True
 
 
 def validate_user_return_session(email, pswd):
-    current_app.logger.debug('model.py validate_user_return_session BEGIN')
-    current_app.logger.info('model.py validate_user_return_session email, pswd: %s %s', email, pswd)
+    login_table = boto3.resource('dynamodb').Table('login')
+    logger.debug('model.py validate_user_return_session BEGIN')
+    logger.info('model.py validate_user_return_session email, pswd: %s %s', email, pswd)
     response = login_table.get_item(
         Key={
             'email': email,
         }
     )
-    current_app.logger.info('model.py validate_user_return_session response: %s', response)
+    logger.info('model.py validate_user_return_session response: %s', response)
     if 'Item' in response and response['Item']['pass'] == pswd:
-        session_token = str(uuid.uuid1().hex)
-        current_app.logger.debug('model.py validate_user_return_session END')
-        return store_session(session_token, response['Item'])
-    current_app.logger.debug('model.py validate_user_return_session END')
+        logger.debug('model.py validate_user_return_session END')
+        return response['Item']['id']
+    logger.debug('model.py validate_user_return_session END')
     return None
 
 
 def validate_user_email(email):
-    current_app.logger.debug('model.py validate_user_email BEGIN')
-    current_app.logger.info('model.py validate_user_email email: %s', email)
+    login_table = boto3.resource('dynamodb').Table('login')
+    logger.debug('model.py validate_user_email BEGIN')
+    logger.info('model.py validate_user_email email: %s', email)
     response = login_table.get_item(
         Key={
             'email': email,
         }
     )
-    current_app.logger.info('model.py validate_user_email response: %s', response)
+    logger.info('model.py validate_user_email response: %s', response)
     if 'Item' in response:
-        current_app.logger.info('model.py validate_user_email response item: %s', response['Item'])
-        current_app.logger.debug('model.py validate_user_email END')
+        logger.info('model.py validate_user_email response item: %s', response['Item'])
+        logger.debug('model.py validate_user_email END')
         return True
-    current_app.logger.debug('model.py validate_user_email END')
+    logger.debug('model.py validate_user_email END')
     return False
 
 
-def store_session(session_id, session_details):
-    current_app.logger.debug('model.py store_session BEGIN')
-    current_app.logger.info('model.py store_session session_id, session_details: %s %s', session_id,
-                            session_details)
-    global session_dict
-    session_dict[session_id] = session_details
-    current_app.logger.info('model.py store_session session_dict[session_id]: %s', session_dict[session_id])
-    current_app.logger.debug('model.py store_session END')
-    return session_id
+# def store_session(session_id, session_details):
+#     logger.debug('model.py store_session BEGIN')
+#     logger.info('model.py store_session session_id, session_details: %s %s', session_id,
+#                 session_details)
+#     session['session_dict'][session_id] = session_details
+#     logger.info('model.py store_session session_dict[session_id]: %s', session['session_dict'][session_id])
+#     logger.debug('model.py store_session END')
+#     return session_id
 
 
-def refresh_session(session_id):
-    current_app.logger.debug('model.py refresh_session BEGIN')
-    email = session_dict[session_id].get('email')
-    current_app.logger.info('model.py store_session session_id, email: %s %s', session_id, email)
-    response = login_table.get_item(
-        Key={
-            'email': email,
-        }
-    )
-    current_app.logger.info('model.py refresh_session response: %s', response)
-    if 'Item' in response:
-        store_session(session_id, response['Item'])
-        current_app.logger.debug('model.py refresh_session END')
-        return True
-    current_app.logger.debug('model.py refresh_session END')
-    return False
+# def refresh_session(session_id):
+#     logger.debug('model.py refresh_session BEGIN')
+#     email = session['session_dict'][session_id].get('email')
+#     logger.info('model.py store_session session_id, email: %s %s', session_id, email)
+#     response = session['login_table'].get_item(
+#         Key={
+#             'email': email,
+#         }
+#     )
+#     logger.info('model.py refresh_session response: %s', response)
+#     if 'Item' in response:
+#         store_session(session_id, response['Item'])
+#         logger.debug('model.py refresh_session END')
+#         return True
+#     logger.debug('model.py refresh_session END')
+#     return False
 
 
-def remove_session(session_id):
-    current_app.logger.debug('model.py remove_session BEGIN')
-    global session_dict
-    session_dict.pop(session_id, None)
-    current_app.logger.debug('model.py remove_session END')
-    return True
+# def remove_session(session_id):
+#     logger.debug('model.py remove_session BEGIN')
+#     session['session_dict'].pop(session_id, None)
+#     logger.debug('model.py remove_session END')
+#     return True
 
 
 def validate_session(session_id):
-    current_app.logger.debug('model.py validate_session %s', session_id)
-    current_app.logger.info('model.py validate_session %s', session_id in session_dict)
-    return session_id in session_dict
+    logger.debug('model.py validate_session %s', session_id)
+    table = boto3.resource('dynamodb').Table('login')
+    response = table.scan(
+        FilterExpression=Attr("id").eq(session_id)
+    )
+    logger.info('model.py validate_session %s', response['Items'])
+    if response['Items']:
+        return True
+    return False
 
 
 def get_user_from_session(session_id):
-    current_app.logger.debug('model.py get_user_from_session BEGIN')
-    if session_id not in session_dict:
-        current_app.logger.debug('model.py get_user_from_session END')
-        return False
-    else:
-        new_dict = session_dict[session_id]
-        new_dict.pop('pass', None)
-        current_app.logger.info('model.py get_user_from_session %s', new_dict)
-        current_app.logger.debug('model.py get_user_from_session END')
+    logger.debug('model.py get_user_from_session BEGIN')
+    table = boto3.resource('dynamodb').Table('login')
+    response = table.scan(
+        FilterExpression=Attr("id").eq(session_id)
+    )
+    logger.info('model.py validate_session %s', response['Items'])
+    if response['Items']:
+        new_dict = response['Items'][0]
+        new_dict.pop('pass')
+        logger.info('model.py get_user_from_session %s', new_dict)
+        logger.debug('model.py get_user_from_session END')
         return new_dict
+    return None
 
 
 def create_new_user(email, username, pswd):
-    current_app.logger.debug('model.py create_new_user BEGIN')
-    login_table.put_item(
+    logger.debug('model.py create_new_user BEGIN')
+    table = boto3.resource('dynamodb').Table('login')
+    table.put_item(
         Item={
             'user_name': username,
             'email': email,
             'pass': pswd,
+            'id': str(uuid.uuid4().hex),
         }
     )
-    current_app.logger.debug('model.py create_new_user END')
+    logger.debug('model.py create_new_user END')
     return True
 
 
 def query_music_table(title, year, artist):
-    current_app.logger.debug('model.py query_music_table BEGIN')
-    current_app.logger.info('model.py query_music_table title, year, artist: %s %s %s', title, year, artist)
+    logger.debug('model.py query_music_table BEGIN')
+    logger.info('model.py query_music_table title, year, artist: %s %s %s', title, year, artist)
     year = year if year is None else int(year)
-    response = music_table.scan(
-        FilterExpression=(Attr('title').ne(title) if title is None else Attr('title').eq(title)) &
-                         (Attr('year').ne(year) if year is None else Attr('year').eq(year)) &
-                         (Attr('artist').ne(artist) if artist is None else Attr('artist').eq(artist))
+    table = boto3.resource('dynamodb').Table('music')
+    response = table.scan(
+        FilterExpression=(Attr('title').ne(title) if title is None else Attr('title').contains(title)) &
+                         (Attr('year').ne(year) if year is None else Attr('year').contains(year)) &
+                         (Attr('artist').ne(artist) if artist is None else Attr('artist').contains(artist))
     )
-    current_app.logger.debug('model.py query_music_table END')
+    logger.debug('model.py query_music_table END')
     return response['Items']
 
 
-def session_music_subscribe(session, music):
-    current_app.logger.debug('model.py session_music_subscribe BEGIN')
-    sub_list = get_sub_list(session)
-    email = session_dict[session].get('email')
-    current_app.logger.debug('model.py session_music_subscribe session, music, email, sub_list: %s %s %s %s',
-                             session, music, email, sub_list)
+def session_music_subscribe(session_id, music):
+    logger.debug('model.py session_music_subscribe BEGIN')
+    user = get_user_from_session(session_id)
+    sub_list = user.get('sub_list')
+    email = user.get('email')
+    logger.debug('model.py session_music_subscribe session, music, email, sub_list: %s %s %s %s',
+                 session_id, music, email, sub_list)
     if sub_list is None:
         sub_list = []
     if music in sub_list:
         return True
     sub_list.append(music)
-    response = login_table.update_item(
+    table = boto3.resource('dynamodb').Table('login')
+    response = table.update_item(
         Key={
             'email': email,
         },
@@ -401,25 +386,27 @@ def session_music_subscribe(session, music):
             ':s': sub_list,
         },
     )
-    current_app.logger.info('model.py session_music_subscribe response: %s', response)
-    current_app.logger.debug('model.py session_music_subscribe END')
+    logger.info('model.py session_music_subscribe response: %s', response)
+    logger.debug('model.py session_music_subscribe END')
     return True
 
 
-def session_music_unsubscribe(session, music):
-    current_app.logger.debug('model.py session_music_unsubscribe BEGIN')
-    sub_list = get_sub_list(session)
-    email = session_dict[session].get('email')
-    current_app.logger.debug(
-        'model.py session_music_unsubscribe session, music, email, sub_list: %s %s %s %s',
-        session, music, email, sub_list)
+def session_music_unsubscribe(session_id, music):
+    logger.debug('model.py session_music_unsubscribe BEGIN')
+    user = get_user_from_session(session_id)
+    sub_list = user.get('sub_list')
+    email = user.get('email')
+    logger.debug(
+        'model.py session_music_unsubscribe session_id, music, email, sub_list: %s %s %s %s',
+        session_id, music, email, sub_list)
     if sub_list is None:
         return False
     if music in sub_list:
         sub_list.remove(music)
     else:
         return True
-    response = login_table.update_item(
+    table = boto3.resource('dynamodb').Table('login')
+    response = table.update_item(
         Key={
             'email': email,
         },
@@ -428,26 +415,27 @@ def session_music_unsubscribe(session, music):
             ':s': sub_list,
         },
     )
-    current_app.logger.info('model.py session_music_unsubscribe response: %s', response)
-    current_app.logger.debug('model.py session_music_unsubscribe END')
+    logger.info('model.py session_music_unsubscribe response: %s', response)
+    logger.debug('model.py session_music_unsubscribe END')
     return True
 
 
-def get_sub_list(session):
-    current_app.logger.debug('model.py get_sub_list BEGIN')
-    refresh_session(session)
-    sub_list = session_dict.get(session).get('sub_list')
-    current_app.logger.debug('model.py get_sub_list END')
-    return sub_list
+# def get_sub_list(session_id):
+#     logger.debug('model.py get_sub_list BEGIN')
+#     refresh_session(session_id)
+#     sub_list = session['session_dict'].get(session_id).get('sub_list')
+#     logger.debug('model.py get_sub_list END')
+#     return sub_list
 
 
 def get_music_dict_from_sub_id(uid):
-    current_app.logger.debug('model.py get_music_dict_from_sub_id BEGIN')
-    response = music_table.get_item(
+    logger.debug('model.py get_music_dict_from_sub_id BEGIN')
+    table = boto3.resource('dynamodb').Table('music')
+    response = table.get_item(
         Key={
             'id': uid,
         }
     )
-    current_app.logger.info('model.py get_music_dict_from_sub_id response.get(Item):%s', response.get('Item'))
-    current_app.logger.debug('model.py get_music_dict_from_sub_id END')
+    logger.info('model.py get_music_dict_from_sub_id response.get(Item):%s', response.get('Item'))
+    logger.debug('model.py get_music_dict_from_sub_id END')
     return response.get('Item')

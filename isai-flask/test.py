@@ -174,7 +174,6 @@ music_table = dynamodb.Table('music')
 s3 = boto3.resource('s3')
 client = boto3.client('s3')
 
-
 # listt = []
 # listtt = client.list_buckets().get('Buckets')
 # for x in listtt:
@@ -212,18 +211,37 @@ client = boto3.client('s3')
 #                                             '123456'))
 
 
-uid = '02aaf440830147a8a0c5b3186c2273bc'
-response = music_table.get_item(
+# uid = '02aaf440830147a8a0c5b3186c2273bc'
+# response = music_table.get_item(
+#     Key={
+#         'id': uid,
+#     }
+# )
+# print(response)
+# dict_music = {}
+# dict_music['title'] = response.get('Item').get('title')
+# dict_music['artist'] = response.get('Item').get('artist')
+# dict_music['year'] = response.get('Item').get('year')
+# dict_music['img_url'] = response.get('Item').get('img_url')
+# dict_music['web_url'] = response.get('Item').get('web_url')
+# print(dict_music)
+# print(response.get('Item'))
+
+uid = '27c8742c0589494c806b5886e781370'
+dclient = boto3.client('dynamodb')
+response = table.scan(
+    FilterExpression=Attr("id").eq(uid)
+)
+
+print(response['Items'])
+if not response['Items']:
+    print('Yes')
+
+
+response = table.get_item(
     Key={
-        'id': uid,
+        'email': 's38132650@student.rmit.edu.au',
     }
 )
-print(response)
-dict_music = {}
-dict_music['title'] = response.get('Item').get('title')
-dict_music['artist'] = response.get('Item').get('artist')
-dict_music['year'] = response.get('Item').get('year')
-dict_music['img_url'] = response.get('Item').get('img_url')
-dict_music['web_url'] = response.get('Item').get('web_url')
-print(dict_music)
-print(response.get('Item'))
+
+print(response['Item']['id'])

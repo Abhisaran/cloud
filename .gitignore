@@ -131,3 +131,7 @@ dmypy.json
 /*.pem
 *.pem
 
+/isai-flask/.idea/*
+.idea
+
+.aws
