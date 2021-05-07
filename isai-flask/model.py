@@ -34,16 +34,15 @@ def init_boto3():
     if 'login' not in existing_tables:
         if not assert_dynamo_login_table(dynamodb_client, dynamodb_resource):
             logger.debug('model.py assert_dynamo Unexpected error, try again END')
-        return False
-    if 'music' not in existing_tables:
-        if not assert_dynamo_music_table(dynamodb_client, dynamodb_resource, s3_client):
-            logger.debug('model.py assert_dynamo Unexpected error, try again END')
             return False
     if 'abhi-dev-music-images' not in bucket_list:
         if not assert_s3_bucket(s3_client):
             logger.debug('model.py assert_dynamo Unexpected error, try again END')
             return False
-
+    if 'music' not in existing_tables:
+        if not assert_dynamo_music_table(dynamodb_client, dynamodb_resource, s3_client):
+            logger.debug('model.py assert_dynamo Unexpected error, try again END')
+            return False
     logger.debug('model.py init_boto3 END')
     return True
 
@@ -140,12 +139,13 @@ def assert_s3_bucket(client):
     logger.debug('model.py assert_s3_bucket BEGIN')
     client.create_bucket(
         ACL='public-read',
-        Bucket='abhi-dev-music-images1',
+        Bucket='abhi-dev-music-images',
         CreateBucketConfiguration={
             'LocationConstraint': 'ap-southeast-2'
         },
         ObjectLockEnabledForBucket=False
     )
+    client.get_waiter('bucket_exists').wait(Bucket='abhi-dev-music-images')
     logger.debug('model.py assert_s3_bucket END')
     return True
 
@@ -180,7 +180,7 @@ def assert_dynamo_login_table(client, resource):
     else:
         logger.debug('model.py assert_dynamo_login_table Table login is created')
         insert_defaults_login_table(client)
-    logger.debug('model.py assert_dynamo_music_table END')
+    logger.debug('model.py assert_dynamo_login_table END')
     return True
 
 
@@ -357,7 +357,7 @@ def query_music_table(title, year, artist):
     table = boto3.resource('dynamodb').Table('music')
     response = table.scan(
         FilterExpression=(Attr('title').ne(title) if title is None else Attr('title').contains(title)) &
-                         (Attr('year').ne(year) if year is None else Attr('year').contains(year)) &
+                         (Attr('year').ne(year) if year is None else Attr('year').eq(year)) &
                          (Attr('artist').ne(artist) if artist is None else Attr('artist').contains(artist))
     )
     logger.debug('model.py query_music_table END')
