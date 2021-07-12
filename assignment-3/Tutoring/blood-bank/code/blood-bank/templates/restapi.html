@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Rest API</title>
+</head>
+<body>
+<p>
+There are two apis:
+1. GET blood requests data
+2. PUT new blood request
+</p>
+<h3>
+  GET BLOOD REQUESTS DATA
+</h3>
+<p>
+  Arguments: NONE
+  <code>
+    {
+    }
+  </code>
+</p>
+
+<h3>
+  PUT NEW BLOOD REQUEST DATA
+</h3>
+<p>
+  Arguments:
+  <code>
+    {
+    "address":""
+    }
+  </code>
+</p>
+
+Try it out below:
+<p>Click on the button below to show the response of GET request</p>
+<a href="/restapi/get"><button>GET</button></a>
+{% if data.get_request %}
+<h4>Response:</h4>
+<p>{{data.get_request}}</p>
+{%endif%}
+<br>
+Try it out below:
+<p>Submit a blood request json below to show the response of POST request</p>
+<div id="form">
+    <form action="" method="post">
+        <textarea name="json_post" id="" cols="30" rows="10">{{data.json_post}}</textarea>
+        <br>
+        <input type="submit" value="Submit">
+    </form>
+</div>
+{% if data.post_request %}
+<h4>Response:</h4>
+<p>{{data.post_request}}</p>
+{%endif%}
+<a href="/">Proceed to Home</a>
+</body>
+</html>

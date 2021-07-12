@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+Welcome Receiver {{data.receiver_details.email}}
+<img src="{{data.receiver_details.img}}" style="height: 100px; width: 100px; border-radius: 50px;">
+<div id="weather-api">{{data.weather}}</div>
+<a href="/logout">Logout</a>
+<div id="user-details">
+    <div id="user-details-form">
+        <form action="" method="post" enctype="multipart/form-data">
+            <h1>Please update your user details:</h1>
+            <h2>Personal Details</h2>
+            <input type="text" name="form_type" value="user_details" hidden>
+            <label>Name:
+                <input type="text" name="name" placeholder="Name" value="{{data.receiver_details.name}}">
+            </label>
+            <label>Date of Birth:
+                <input type="date" name="dob" placeholder="D.O.B" value="{{data.receiver_details.dob}}">
+            </label>
+            <label>Address:
+                <input type="text" name="address" placeholder="Address" value="{{data.receiver_details.address}}">
+            </label>
+            <label>Availability:
+                <select name="availability" value="{{data.receiver_details.availability}}">
+                    <option value=1>ASAP</option>
+                    <option value=2>24 hours</option>
+                    <option value=3>1 week</option>
+                </select>
+            </label>
+            <label>Contact:
+                <input type="tel" name="contact" placeholder="Contact"
+                       value="{{data.receiver_details.contact}}">
+            </label>
+            <label>Emergency Contact:
+                <input type="tel" name="emergency_contact" placeholder="Emergency Contact"
+                       value="{{data.receiver_details.emergency_contact}}">
+            </label>
+            <label>Emergency Contact Relationship:
+                <input type="text" name="emergency_contact_rel" placeholder="Relation"
+                       value="{{data.receiver_details.emergency_contact_rel}}">
+            </label>
+            <h2>Blood details:</h2>
+            <!--    TO be improved-->
+            <label>
+                <input type="text" name="blood_group" placeholder="Blood Group"
+                       value="{{data.receiver_details.blood_group}}">
+            </label>
+            <label>
+                <input type="number" name="total_blood_donations" placeholder="Blood Total"
+                       value="{{data.receiver_details.total_blood_donations}}">
+            </label>
+            <label>
+                <input type="text" name="membership_ids" placeholder="Membership IDs"
+                       value="{{data.receiver_details.membership_ids}}">
+            </label>
+            <label>
+                <input type="text" name="alcoholic" placeholder="Alcoholic" value="{{data.receiver_details.alcoholic}}">
+            </label>
+            <label>
+                <input type="text" name="diabetic" placeholder="Diabetic" value="{{data.receiver_details.diabetic}}">
+            </label>
+            <label>
+                <input type="text" name="medical_conditions" placeholder="Medical Conditions"
+                       value="{{data.receiver_details.medical_conditions}}">
+            </label>
+            <input type="file" placeholder="img" accept="image/jpeg" name="img">
+
+            <input type="submit" name="submit" value="Submit">
+        </form>
+    </div>
+</div>
+<hr>
+<h2>Put up new blood request</h2>
+<div id="put-blood-request">
+    <form action="" method="post">
+        <input type="text" name="form_type" value="blood_request" hidden>
+        <input type="text" name="address" placeholder="address" value="{{data.blood_request_details.address}}">
+        <input type="text" name="blood_group" placeholder="Blood group" value="{{data.blood_request_details.blood_group}}">
+        <input type="submit" value="submit">
+    </form>
+    {%if data.post_request%}
+    <p>{{data.post_request}}</p>
+    {% endif %}
+</div>
+<hr>
+<div>
+    {%if data.blood_request_list%}
+    <h1>Blood Request History</h1>
+    {%for a in data.blood_request_list%}
+    <p>{{a}}</p>
+    {% if a.allocated%}
+    <p>Allocated</p>
+    {%else%}
+    <p>Not Yet Allocated</p>
+    {% endif %}
+</div>
+{%endfor%}
+{% endif %}
+</div>
+<hr>
+<div id="donation-stats">
+    Data about how many people have donated this year
+</div>
+<div id="google-maps-ambulance">
+    Here is the google maps
+</div>
+</body>
+</html>

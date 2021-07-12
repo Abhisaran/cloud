@@ -1,0 +1,607 @@
+Stack Overflow
+About
+Products
+For Teams
+Search…
+
+Join Stack Overflow to learn, share knowledge, and build your career.
+
+Home
+PUBLIC
+Questions
+Tags
+Users
+COLLECTIVES
+Explore Collectives
+FIND A JOB
+Jobs
+Companies
+TEAMS
+Stack Overflow for Teams – Collaborate and share knowledge with a private group.
+Remove all the elements that occur in one list from another
+Asked 10 years, 7 months ago
+Active 2 months ago
+Viewed 346k times
+
+434
+
+
+69
+Let's say I have two lists, l1 and l2. I want to perform l1 - l2, which returns all elements of l1 not in l2.
+
+I can think of a naive loop approach to doing this, but that is going to be really inefficient. What is a pythonic and efficient way of doing this?
+
+As an example, if I have l1 = [1,2,6,8] and l2 = [2,3,5,8], l1 - l2 should return [1,6]
+
+python
+list
+Share
+Improve this question
+Follow
+edited Jun 22 '15 at 17:09
+
+APerson
+7,36466 gold badges3232 silver badges4848 bronze badges
+asked Nov 18 '10 at 2:45
+
+fandom
+4,34122 gold badges1313 silver badges33 bronze badges
+19
+Just a tip: PEP8 states that lowercase "L" should not be used because it looks too much like a 1. – spelchekr Jun 10 '15 at 19:43
+3
+I agree. I read this whole question and the answers wondering why people kept using eleven and twelve. It was only when I read @spelchekr 's comment that it made sense. – robline Aug 21 '19 at 17:15
+1
+Possible duplicate of dropping rows from dataframe based on a "not in" condition – Jim G. Sep 11 '19 at 18:34
+2
+@JimG. Dataframe and list is not the same thing. – reducing activity Nov 6 '19 at 10:10
+Add a comment
+11 Answers
+
+585
+
+Python has a language feature called List Comprehensions that is perfectly suited to making this sort of thing extremely easy. The following statement does exactly what you want and stores the result in l3:
+
+l3 = [x for x in l1 if x not in l2]
+l3 will contain [1, 6].
+
+Share
+Improve this answer
+Follow
+edited Aug 23 '19 at 21:24
+
+Trilarion
+9,36999 gold badges5555 silver badges9292 bronze badges
+answered Nov 18 '10 at 2:48
+
+Donut
+97k1818 gold badges124124 silver badges140140 bronze badges
+10
+Very pythonic; I like it! How efficient is it? – fandom Nov 18 '10 at 2:51
+2
+I believe quite efficient, and it has the benefit of being extremely readable and clear as to what you're trying to accomplish. I came across a blog post you might find interesting relating to efficiency: blog.cdleary.com/2010/04/efficiency-of-list-comprehensions – Donut Nov 18 '10 at 2:55
+9
+@fandom: the list comprehension itself is quite efficient (although a generator comprehension might be more efficient by not duplicating elements in memory), but the in operator isn't that efficient on a list. in on a list is O(n), whereas in on a set is O(1). However, until you get to thousands of elements or more, you're unlikely to notice the difference. – Daniel Pryden Nov 18 '10 at 3:10
+1
+l3 = [x for x in l1 if x not in set(l2)] ? I am sure if set(l2) would be called more than once. – Danosaure Nov 18 '10 at 6:30
+5
+You could also just set l2s = set(l2) and then say l3 = [x for x in l1 if x not in l2s]. Slightly easier. – spelchekr Jun 10 '15 at 19:40
+Show 6 more comments
+
+180
+
+One way is to use sets:
+
+>>> set([1,2,6,8]) - set([2,3,5,8])
+set([1, 6])
+Note, however, that sets do not preserve the order of elements, and cause any duplicated elements to be removed. The elements also need to be hashable. If these restrictions are tolerable, this may often be the simplest and highest performance option.
+
+Share
+Improve this answer
+Follow
+edited Jun 28 '20 at 22:24
+answered Nov 18 '10 at 2:50
+
+Arkku
+37.7k1010 gold badges5757 silver badges7979 bronze badges
+67
+This will also remove duplicates from l1, which may be an undesired side effect. – kindall Nov 18 '10 at 4:43
+46
+..and lose element order (if order is important). – Danosaure Nov 18 '10 at 6:27
+6
+I just want to add that I timed this vs. the accepted answer and it was more performant by a factor of about 3: timeit.timeit('a = [1,2,3,4]; b = [1,3]; c = [i for i in a if a not in b]', number=100000) -> 0.12061533199999985 timeit.timeit('a = {1,2,3,4}; b = {1,3}; c = a - b', number=100000) -> 0.04106225999998969. So if performance is a significant factor, this answer may be more appropriate (and also if you don't care about duplicates or order) – wfgeo Jul 15 '19 at 8:32
+Faster but not in existing order – hongkail Oct 17 '20 at 15:44
+Add a comment
+
+68
+
+Performance Comparisons
+Comparing the performance of all the answers mentioned here on Python 3.9.1 and Python 2.7.16.
+
+Python 3.9.1
+Answers are mentioned in order of performance:
+
+Arkku's set difference using subtraction "-" operation - (91.3 nsec per loop)
+
+mquadri$ python3 -m timeit -s "l1 = set([1,2,6,8]); l2 = set([2,3,5,8]);" "l1 - l2"
+5000000 loops, best of 5: 91.3 nsec per loop
+Moinuddin Quadri's using set().difference()- (133 nsec per loop)
+
+mquadri$ python3 -m timeit -s "l1 = set([1,2,6,8]); l2 = set([2,3,5,8]);" "l1.difference(l2)"
+2000000 loops, best of 5: 133 nsec per loop
+Moinuddin Quadri's list comprehension with set based lookup- (366 nsec per loop)
+
+ mquadri$ python3 -m timeit -s "l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "[x for x in l1 if x not in l2]"
+ 1000000 loops, best of 5: 366 nsec per loop
+Donut's list comprehension on plain list - (489 nsec per loop)
+
+ mquadri$ python3 -m timeit -s "l1 = [1,2,6,8]; l2 = [2,3,5,8];" "[x for x in l1 if x not in l2]"
+ 500000 loops, best of 5: 489 nsec per loop
+Daniel Pryden's generator expression with set based lookup and type-casting to list - (583 nsec per loop) : Explicitly type-casting to list to get the final object as list, as requested by OP. If generator expression is replaced with list comprehension, it'll become same as Moinuddin Quadri's list comprehension with set based lookup.
+
+ mquadri$ mquadri$ python3 -m timeit -s "l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "list(x for x in l1 if x not in l2)"
+ 500000 loops, best of 5: 583 nsec per loop
+Moinuddin Quadri's using filter() and explicitly type-casting to list (need to explicitly type-cast as in Python 3.x, it returns iterator) - (681 nsec per loop)
+
+ mquadri$ python3 -m timeit -s "l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "list(filter(lambda x: x not in l2, l1))"
+ 500000 loops, best of 5: 681 nsec per loop
+Akshay Hazari's using combination of functools.reduce + filter -(3.36 usec per loop) : Explicitly type-casting to list as from Python 3.x it started returned returning iterator. Also we need to import functools to use reduce in Python 3.x
+
+ mquadri$ python3 -m timeit "from functools import reduce; l1 = [1,2,6,8]; l2 = [2,3,5,8];" "list(reduce(lambda x,y : filter(lambda z: z!=y,x) ,l1,l2))"
+ 100000 loops, best of 5: 3.36 usec per loop
+Python 2.7.16
+Answers are mentioned in order of performance:
+
+Arkku's set difference using subtraction "-" operation - (0.0783 usec per loop)
+
+mquadri$ python -m timeit -s "l1 = set([1,2,6,8]); l2 = set([2,3,5,8]);" "l1 - l2"
+10000000 loops, best of 3: 0.0783 usec per loop
+Moinuddin Quadri's using set().difference()- (0.117 usec per loop)
+
+mquadri$ mquadri$ python -m timeit -s "l1 = set([1,2,6,8]); l2 = set([2,3,5,8]);" "l1.difference(l2)"
+10000000 loops, best of 3: 0.117 usec per loop
+Moinuddin Quadri's list comprehension with set based lookup- (0.246 usec per loop)
+
+ mquadri$ python -m timeit -s "l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "[x for x in l1 if x not in l2]"
+ 1000000 loops, best of 3: 0.246 usec per loop
+Donut's list comprehension on plain list - (0.372 usec per loop)
+
+ mquadri$ python -m timeit -s "l1 = [1,2,6,8]; l2 = [2,3,5,8];" "[x for x in l1 if x not in l2]"
+ 1000000 loops, best of 3: 0.372 usec per loop
+Moinuddin Quadri's using filter() - (0.593 usec per loop)
+
+ mquadri$ python -m timeit -s "l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "filter(lambda x: x not in l2, l1)"
+ 1000000 loops, best of 3: 0.593 usec per loop
+Daniel Pryden's generator expression with set based lookup and type-casting to list - (0.964 per loop) : Explicitly type-casting to list to get the final object as list, as requested by OP. If generator expression is replaced with list comprehension, it'll become same as Moinuddin Quadri's list comprehension with set based lookup.
+
+ mquadri$ python -m timeit -s "l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "list(x for x in l1 if x not in l2)"
+ 1000000 loops, best of 3: 0.964 usec per loop
+Akshay Hazari's using combination of functools.reduce + filter -(2.78 usec per loop)
+
+ mquadri$ python -m timeit "l1 = [1,2,6,8]; l2 = [2,3,5,8];" "reduce(lambda x,y : filter(lambda z: z!=y,x) ,l1,l2)"
+ 100000 loops, best of 3: 2.78 usec per loop
+Share
+Improve this answer
+Follow
+edited Jan 24 at 15:38
+answered Dec 30 '17 at 22:41
+
+Anonymous
+40.5k88 gold badges8383 silver badges111111 bronze badges
+2
+This answer is a great service to humanity. I was using list comprehension and my operation failed to finish in 25 minutes; then I switched to set subtraction and it finished in 24 seconds. A miraculous improvement far beyond your timeit results. – Aaron Bramson Mar 4 at 8:01
+Wowwwwwwww! Amazing effort. – yash Choksi Apr 4 at 9:42
+Add a comment
+
+32
+
+Expanding on Donut's answer and the other answers here, you can get even better results by using a generator comprehension instead of a list comprehension, and by using a set data structure (since the in operator is O(n) on a list but O(1) on a set).
+
+So here's a function that would work for you:
+
+def filter_list(full_list, excludes):
+    s = set(excludes)
+    return (x for x in full_list if x not in s)
+The result will be an iterable that will lazily fetch the filtered list. If you need a real list object (e.g. if you need to do a len() on the result), then you can easily build a list like so:
+
+filtered_list = list(filter_list(full_list, excludes))
+Share
+Improve this answer
+Follow
+answered Nov 18 '10 at 3:07
+
+Daniel Pryden
+54.8k1212 gold badges8989 silver badges131131 bronze badges
+Add a comment
+
+29
+
+Use the Python set type. That would be the most Pythonic. :)
+
+Also, since it's native, it should be the most optimized method too.
+
+See:
+
+http://docs.python.org/library/stdtypes.html#set
+
+http://docs.python.org/library/sets.htm (for older python)
+
+# Using Python 2.7 set literal format.
+# Otherwise, use: l1 = set([1,2,6,8])
+#
+l1 = {1,2,6,8}
+l2 = {2,3,5,8}
+l3 = l1 - l2
+Share
+Improve this answer
+Follow
+edited Nov 7 '15 at 1:12
+
+skrrgwasme
+8,3501111 gold badges4848 silver badges7272 bronze badges
+answered Nov 18 '10 at 2:56
+
+nonot1
+2,62844 gold badges2323 silver badges4141 bronze badges
+5
+When using sets it should be noted that the output of is ordered, i.e. {1,3,2} becomes {1,2,3} and {"A","C","B"} becomes {"A","B","C"} and you might not want to have that. – Pablo Reyes Mar 8 '17 at 0:19
+2
+this method will not work if list l1 includes repeated elements. – jdhao Nov 8 '18 at 2:36
+Add a comment
+
+12
+
+use Set Comprehensions {x for x in l2} or set(l2) to get set, then use List Comprehensions to get list
+
+l2set = set(l2)
+l3 = [x for x in l1 if x not in l2set]
+benchmark test code:
+
+import time
+
+l1 = list(range(1000*10 * 3))
+l2 = list(range(1000*10 * 2))
+
+l2set = {x for x in l2}
+
+tic = time.time()
+l3 = [x for x in l1 if x not in l2set]
+toc = time.time()
+diffset = toc-tic
+print(diffset)
+
+tic = time.time()
+l3 = [x for x in l1 if x not in l2]
+toc = time.time()
+difflist = toc-tic
+print(difflist)
+
+print("speedup %fx"%(difflist/diffset))
+benchmark test result:
+
+0.0015058517456054688
+3.968189239501953
+speedup 2635.179227x
+Share
+Improve this answer
+Follow
+edited Nov 5 '19 at 11:48
+answered Oct 17 '19 at 18:30
+
+lbsweek
+4,2493838 silver badges3838 bronze badges
+2
+l2set = set( l2 ) instead of l2set = { x for x in l2 } – c z Oct 31 '19 at 10:42
+1
+Nice soultion! But it must be kept in mind, that it only works with hashable objects. – Eerik Sven Puudist Dec 12 '19 at 11:01
+Add a comment
+
+7
+
+Alternate Solution :
+
+reduce(lambda x,y : filter(lambda z: z!=y,x) ,[2,3,5,8],[1,2,6,8])
+Share
+Improve this answer
+Follow
+edited Nov 3 '15 at 4:36
+answered Nov 3 '15 at 4:19
+
+Akshay Hazari
+2,73533 gold badges3737 silver badges6868 bronze badges
+3
+Is there any advantage to using this method? It looks like it's more complex and harder to read without much benefit. – skrrgwasme Nov 7 '15 at 1:13
+That might seem complex . Reduce is very flexible and can be used for a lot of purposes. It is known as fold . reduce is actually foldl . Suppose you want to add more complex stuff in it then it will be possible in this function but list comprehension which is the selected best answer will only get you an output of the same type i.e list and probably of the same length while with folds you could change the output type as well . en.wikipedia.org/wiki/Fold_%28higher-order_function%29 . This solution is n*m or less complexity. Others may or may not be better though. – Akshay Hazari Nov 9 '15 at 4:09
+1
+reduce (function , list , initial accumulator (which can be of any type)) – Akshay Hazari Nov 9 '15 at 4:11
+Add a comment
+
+1
+
+Using filterfalse without lambda-expression
+When using functions like filter or filterfalse and similar from itertools you can usually save performance by avoiding lambda-expressions and using already existing functions. Instances of list and set defines a __contains__-method to use for containment checks. The in-operator calls this method under the hood, so using x in l2 can be replaced by l2.__contains__(x). Usually this replacement is not really prettier but in this specific case it allows us to gain better performance than using a lambda-expression, when used in combination with filterfalse:
+
+>>> from itertools import filterfalse
+>>> l1 = [1, 2, 6, 8]
+>>> l2 = [2, 3, 5, 8]
+>>> list(filterfalse(l2.__contains__, l1))
+[1, 6]
+filterfalse creates an iterator yielding all elements that returns false when used as an argument for l2.__contains__.
+
+Sets has a faster implementation of __contains__ so even better is:
+
+>>> from itertools import filterfalse
+>>> l1 = [1, 2, 6, 8]
+>>> l2 = set([2, 3, 5, 8])
+>>> list(filterfalse(l2.__contains__, l1))
+[1, 6]
+Performance
+Using list:
+
+$  python3 -m timeit -s "from itertools import filterfalse; l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "list(filterfalse(l2.__contains__, l1))"
+500000 loops, best of 5: 522 nsec per loop
+Using set:
+
+$ python3 -m timeit -s "from itertools import filterfalse; l1 = [1,2,6,8]; l2 = set([2,3,5,8]);" "list(filterfalse(l2.__contains__, l1))"
+1000000 loops, best of 5: 359 nsec per loop
+Share
+Improve this answer
+Follow
+answered Apr 9 at 15:06
+
+Sebastian Baltser
+53111 silver badge88 bronze badges
+Add a comment
+
+0
+
+Sets versus list comprehension benchmark on Python 3.8
+(adding up to Moinuddin Quadri's benchmarks)
+
+tldr: Use Arkku's set solution, it's even faster than promised in comparison!
+
+Checking existing files against a list
+In my example I found it to be 40 times (!) faster to use Arkku's set solution than the pythonic list comprehension for a real world application of checking existing filenames against a list.
+
+List comprehension:
+%%time
+import glob
+existing = [int(os.path.basename(x).split(".")[0]) for x in glob.glob("*.txt")]
+wanted = list(range(1, 100000))
+[i for i in wanted if i not in existing]
+Wall time: 28.2 s
+
+Sets
+%%time
+import glob
+existing = [int(os.path.basename(x).split(".")[0]) for x in glob.glob("*.txt")]
+wanted = list(range(1, 100000))
+set(wanted) - set(existing)
+Wall time: 689 ms
+
+Share
+Improve this answer
+Follow
+answered Jan 11 at 20:50
+
+do-me
+11366 bronze badges
+Add a comment
+
+0
+
+Try this:
+
+l1=[1,2,6,8]
+l2=[2,3,5,8]
+r=[]
+for x in l1:
+    if x in l2:
+        continue
+    r=r+[x]
+print(r)
+Share
+Improve this answer
+Follow
+answered Jan 24 at 13:10
+
+SX10
+1222 bronze badges
+Add a comment
+
+0
+
+Using set.difference():
+You can use set.difference() to get new set with elements in the set that are not in the others. i.e. set(A).difference(B) will return set with items present in A, but not in B. For example:
+
+>>> set([1,2,6,8]).difference([2,3,5,8])
+{1, 6}
+It is a functional approach to get set difference mentioned in Arkku's answer (which uses arithmetic subtraction - operator for set difference).
+
+Since sets are unordered, you'll loose the ordering of elements from initial list. (continue reading next section if you want to maintain the orderig of elements)
+
+Using List Comprehension with set based lookup
+If you want to maintain the ordering from initial list, then Donut's list comprehension based answer will do the trick. However, you can get better performance from the accepted answer by using set internally for checking whether element is present in other list. For example:
+
+l1, l2 = [1,2,6,8], [2,3,5,8]
+s2 = set(l2)  # Type-cast `l2` to `set`
+
+l3 = [x for x in l1 if x not in s2]
+                             #   ^ Doing membership checking on `set` s2
+If you are interested in knowing why membership checking is faster is set when compared to list, please read this: What makes sets faster than lists?
+
+Using filter() and lambda expression
+Here's another alternative using filter() with the lambda expression. Adding it here just for reference, but it is not performance efficient:
+
+>>> l1 = [1,2,6,8]
+>>> l2 = set([2,3,5,8])
+
+#     v  `filter` returns the a iterator object. Here I'm type-casting
+#     v  it to `list` in order to display the resultant value
+>>> list(filter(lambda x: x not in l2, l1))
+[1, 6]
+Share
+Improve this answer
+Follow
+edited Jan 24 at 15:37
+answered Jan 24 at 7:50
+
+Anonymous
+40.5k88 gold badges8383 silver badges111111 bronze badges
+Add a comment
+Highly active question. Earn 10 reputation (not counting the association bonus) in order to answer this question. The reputation requirement helps protect this question from spam and non-answer activity.
+Not the answer you're looking for? Browse other questions tagged python list or ask your own question.
+The Overflow Blog
+Level Up: Linear Regression in Python – Part 7
+Podcast 353: Bring your own stack – why developer platforms are going headless
+Featured on Meta
+Beta release of Collectives™ on Stack Overflow
+Want a python job?
+
+Mid/Senior Python Developer
+We Are Common  Melbourne, Australia
+A$100K - A$160K
+pythondjango
+Senior Full-Stack Engineers
+Kanopi  Collingwood North, Australia
+REMOTE
+pythonreactjs
+
+Back-end Web Developer (PHP or Python)
+Kettle  No office location
+$80K - $160KREMOTE
+pythonphp
+
+Senior Full Stack Developer at Kogan.com
+We Are Common  Melbourne, Australia
+A$100K - A$140K
+pythonreactjs
+
+Senior Software Engineer
+We Are Common  Melbourne, Australia
+A$140K - A$160K
+pythondjango-rest-framework
+
+Python/Django Developer (Remote)
+Soshace LLC  No office location
+$50K - $96KREMOTE
+pythondjango
+
+Business/Data Analyst (Python/Jupyter/Pandas/Numpy)
+Hummingbot  No office location
+$50K - $75KREMOTE
+pythonsql
+
+Senior Backend Engineer
+Tessian  London, UK
+£80K - £110KREMOTERELOCATION
+pythoncontinuous-integration
+View more jobs on Stack Overflow
+Linked
+148
+Remove all values within one list from another list?
+40
+AND/OR in Python?
+8
+remove elements in one list present in another list
+8
+Subtracting one list from another in Python
+0
+how do you remove a list from another list?
+2
+Delete element in list
+2
+Removing items from a list by comparing with a second list, Python
+-1
+How can i create a list of elements from 2 other lists
+-3
+Keep in array of words just given words from another array
+0
+how to delete a list's value from another list
+See more linked questions
+Related
+2022
+Calling a function of a module by using its name (a string)
+2585
+How do you split a list into evenly sized chunks?
+1794
+How to remove an element from a list by index
+2082
+How do I get the number of elements in a list?
+794
+Remove empty strings from a list of strings
+898
+How to remove the first Item from a list?
+1546
+Pythonic way to create a long multi-line string
+3
+Remove all the elements that occur in 1 list from another c++
+1534
+Why not inherit from List<T>?
+Hot Network Questions
+Is the prevalence of racial arguments unique to US politics or is it a topic in other Western countries as well?
+Create a Vector with a Value Node as each value
+What are those half-vanes in the engine inlet of a 707-328?
+Why some people mentioned PHP as "Pretty Home Page"? Was it once PHP's real name?
+Asimov story about a man who can do calculations on paper
+Can VMD change its cartoon representation for secondary structure according to trajectories?
+Why are there no adult balance bikes?
+What is the meaning of the English word “ravished” in this sentence, violated or transfixed?
+How were Rakshas created?
+Showing price on legend when seats are unavailable
+Can the place that the direct object occupies change the meaning of the sentence?
+making sense for "How does it look like?"
+Why was Ludo willing to give a small fortune (the Quidditch World Cup tickets) to the Weasleys?
+How could a living biological sword survive a spaceship crash and then isolation for millennia?
+Was the Doc Brown picking up Marty and Jennifer from 1985, from 2015, or from another year?
+Why is my ORCA calculation of nitrogen iodide failing?
+Can you get sued for producing excessively violent materials in the form of a book, movie or video game in the U.S.?
+How can an armed group travel to and attack a rival group in another country?
+What is the difference between western and other philosophies?
+Why does canola oil heat up in the microwave?
+When changing from windows 10 to linux, will the data still on pc or removed?
+Original manuscripts of 16th century composers
+How do I express "I don’t envy you" properly in Chinese?
+How to say "We shall see" in Latin?
+ Question feed
+
+STACK OVERFLOW
+Questions
+Jobs
+Developer Jobs Directory
+Salary Calculator
+Help
+Mobile
+Disable Responsiveness
+PRODUCTS
+Teams
+Talent
+Advertising
+Enterprise
+COMPANY
+About
+Press
+Work Here
+Legal
+Privacy Policy
+Terms of Service
+Contact Us
+Cookie Settings
+Cookie Policy
+STACK EXCHANGE
+NETWORK
+Technology
+Life / Arts
+Culture / Recreation
+Science
+Other
+Blog
+Facebook
+Twitter
+LinkedIn
+Instagram
+site design / logo © 2021 Stack Exchange Inc; user contributions licensed under cc by-sa. rev 2021.7.2.39633
+
+Your privacy
+
+By clicking “Accept all cookies”, you agree Stack Exchange can store cookies on your device and disclose information in accordance with our Cookie Policy.
+

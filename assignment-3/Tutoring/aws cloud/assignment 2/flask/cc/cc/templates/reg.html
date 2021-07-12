@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Register</title>
+</head>
+<body>
+<div>
+    <form action="" method="post">
+        <h3>Register</h3>
+        <input type="text" placeholder="email" name="email">
+        <input type="text" placeholder="username" name="username">
+        <input type="text" placeholder="password" name="password">
+        <button type="submit" value="reg">Register</button>
+    </form>
+    <p><a href="/login">Login</a></p>
+    {% if data.e %}
+    <p>{{ data.e }}
+        {% endif %}
+</div>
+</body>
+</html>

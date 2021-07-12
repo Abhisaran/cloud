@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<head>
+Big Query tasks
+</head>
+<body>
+<table>
+    <tr>
+        <th>time_ref</th>
+        <th>value</th>
+    </tr>
+    {% for q in data.qj %}
+    <tr>
+        <td>{{q[0]}}</td>
+        <td>{{q[1]}}</td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
+</html>

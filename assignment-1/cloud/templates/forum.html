@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css"
+          media="screen">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='styles/forum.css') }}">
+    <title>{{context.title}}</title>
+</head>
+<body>
+
+<div id="container">
+    <div class="left">
+        <h1>User Area</h1>
+        <img class="crop" src="{{ context.user_img }}" alt="User Image" height="120px" width="120px"
+             style="object-fit: cover; border-radius: 50%">
+        <h3>Welcome <a href="/user" style="font-size: x-large">{{context.user}}</a>!</h3>
+        <h3><a href="/logout" style="font-size: large">Logout</a></h3>
+    </div>
+    <div class="right">
+        <div class="message-post-area" id="message-post-area-id">
+            <div class="message-form">
+                <h2>New Post</h2>
+                <form action="" method="post" enctype="multipart/form-data" id="post-form">
+                    <input type="text" class="form-control" placeholder="subject" required="required"
+                           name="subject"
+                           value="{{
+                  request.form.subject }}">
+                    <textarea rows="3" cols="100" placeholder="Message Text" required name="message" value="{{
+                  request.form.message }}"></textarea>
+                    <input type="file" class="form-control" placeholder="Image" required="required"
+                           name="img" accept="image/jpeg">
+                    <button type="submit" class="btn btn-primary btn-block" value="submit">Submit</button>
+                </form>
+
+                {% if context.error %}
+                <p class="error"><strong>Error:</strong> {{ context.error }}
+                    {% endif %}
+            </div>
+        </div>
+        <br><br>
+        <hr>
+        <div id="message-display-area">
+            <H2>Posts:</H2>
+            <!--            <div class="post-container">-->
+            <!--                <div class="left-post-container">-->
+            <!--                    <img src="" alt="">-->
+            <!--                    <p></p>-->
+            <!--                </div>-->
+            <!--                <div class="right-post-container">-->
+            <!--                    <p></p>-->
+            <!--                    <p></p>-->
+            <!--                    <p></p>-->
+            <!--                </div>-->
+            <!--            <img src="" alt="">-->
+            <!--            </div>-->
+
+            <!--            img-->
+            <!--            creator-->
+            <!--            subject-->
+            <!--            message-->
+            <!--            time-->
+        </div>
+    </div>
+</div>
+<script src="{{url_for('static', filename='js/forum.js')}}"></script>
+</body>
+</html>

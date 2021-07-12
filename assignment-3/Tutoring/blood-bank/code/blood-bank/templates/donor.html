@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+Welcome Donor {{data.donor_details.email}}
+<img src="{{data.donor_details.img}}" style="height: 100px; width: 100px; border-radius: 50px;">
+<a href="/logout">Logout</a>
+<div id="weather-api">
+    <p>Location: {{data.weather['place']}} Time:{{data.weather['place']}} Today:{{data.weather['date']}}</p>
+    <p>{{data.weather['day']['narrative']}} {{data.weather['day']['temperature']}}℃ UV
+        index:{{data.weather['day']['uv_description']}}</p>
+
+</div>
+<div id="user-details">
+    <div id="user-details-form">
+        <form action="" method="post" enctype="multipart/form-data">
+            <h1>Please update your user details:</h1>
+            <h2>Personal Details</h2>
+            <label>Name:
+                <input type="text" name="name" placeholder="Name" value="{{data.donor_details.name}}">
+            </label>
+            <label>Date of Birth:
+                <input type="date" name="dob" placeholder="D.O.B" value="{{data.donor_details.dob}}">
+            </label>
+            <label>Address:
+                <input type="text" name="address" placeholder="Address" value="{{data.donor_details.address}}">
+            </label>
+            <label>Availability:
+                <select name="availability" value="{{data.donor_details.availability}}">
+                    <option value=1>ASAP</option>
+                    <option value=2>24 hours</option>
+                    <option value=3>1 week</option>
+                </select>
+            </label>
+            <label>Contact:
+                <input type="tel" name="contact" placeholder="Contact"
+                       value="{{data.donor_details.contact}}">
+            </label>
+            <label>Emergency Contact:
+                <input type="tel" name="emergency_contact" placeholder="Emergency Contact"
+                       value="{{data.donor_details.emergency_contact}}">
+            </label>
+            <label>Emergency Contact Relationship:
+                <input type="text" name="emergency_contact_rel" placeholder="Relation"
+                       value="{{data.donor_details.emergency_contact_rel}}">
+            </label>
+            <h2>Blood details:</h2>
+            <!--    TO be improved-->
+            <label>
+                <input type="text" name="blood_group" placeholder="Blood Group"
+                       value="{{data.donor_details.blood_group}}">
+            </label>
+            <label>
+                <input type="number" name="total_blood_donations" placeholder="Blood Total"
+                       value="{{data.donor_details.total_blood_donations}}">
+            </label>
+            <label>
+                <input type="text" name="membership_ids" placeholder="Membership IDs"
+                       value="{{data.donor_details.membership_ids}}">
+            </label>
+            <label>
+                <input type="text" name="alcoholic" placeholder="Alcoholic" value="{{data.donor_details.alcoholic}}">
+            </label>
+            <label>
+                <input type="text" name="diabetic" placeholder="Diabetic" value="{{data.donor_details.diabetic}}">
+            </label>
+            <label>
+                <input type="text" name="medical_conditions" placeholder="Medical Conditions"
+                       value="{{data.donor_details.medical_conditions}}">
+            </label>
+            <input type="file" placeholder="img" accept="image/jpeg" name="img">
+            <input type="submit" name="submit" value="Submit">
+        </form>
+    </div>
+</div>
+<hr>
+<h2>View blood requests</h2>
+<div id="view-blood-requests">
+    {% for i in data.blood_req_list%}
+    <p>{{i['allocated_user_id']}} {{i['allocated_center_id']}} {{i['address']}} {{i['allocated']}} {{i['uid']}}
+        {{i['receiver_id']}}</p>
+    {% endfor %}
+</div>
+<hr>
+<div id="donation-stats">
+    Data about how many people have donated this year
+</div>
+</body>
+</html>

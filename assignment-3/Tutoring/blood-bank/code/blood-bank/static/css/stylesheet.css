@@ -1,0 +1,69 @@
+.container{
+    font-family: Helvetica, serif;
+    position: relative;
+}
+input[type=submit] {
+    background-color:   #d9d9d9;
+    margin: 20px;
+    width: 80%;
+    outline: none;
+}
+input[type=submit]:hover {
+    background-color: #cccccc;
+    margin: 20px;
+    width: 80%;
+    outline: none;
+}
+.bottom{
+    background-color: whitesmoke;
+    margin: 20px;
+    width: 40%;
+}
+input[type=text],select{
+    width: 80%;
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 8px 12px;
+    margin:10px
+}
+.form_title{
+    text-align: center;
+}
+.card{
+    background-color: lightgray;
+    padding: 20px;
+    height: 500px;
+    width: 300px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+form{
+    text-align:center
+}
+textarea:focus, input:focus{
+    outline: none;
+}
+.nav {
+    overflow: hidden;
+  background-color: #333;
+}
+.nav a {
+  float: right;
+  color: #cccccc;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+  font-size: 17px;
+}
+nav a:hover {
+  background-color: #ddd;
+  color: black;
+}
+.home{
+    text-align: center;
+    align-items: center;
+    font-family: ".SF NS", monospace;
+    font-size: 28px;
+    border-color: aliceblue;
+}

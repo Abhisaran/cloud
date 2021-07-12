@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/stylesheet.css') }}">
+<body>
+Login Page
+Choose your option:
+<form method="post" action="">
+    <select name="entity">
+        <option value="b28031811a11">Donor</option>
+        <option value="a41318003fed">Receiver</option>
+        <option value="defe3844e80e">Center</option>
+    </select>
+    <input type="text" name="email" placeholder="Email" required>
+    <input type="text" name="password" placeholder="password" required>
+    <input type="submit" name="submit" value="Sign In">
+</form>
+{% if data.msg%}
+<p>{{data.msg}}</p>
+{% endif%}
+<a href="/signup">Sign Up</a>
+</body>
+</html>

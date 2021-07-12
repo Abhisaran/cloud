@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Big Query</title>
+</head>
+<body>
+<style>
+    th{
+        font-weight: bold;
+    }
+</style>
+<h1>Assignment 1</h1>
+<h2>Task 1:</h2>
+<table>
+    <tr>
+        <th>Time period</th>
+        <th>Value</th>
+    </tr>
+    {% for row in context.query1 %}
+    <tr>
+        <td>{{row[0]}}</td>
+        <td>{{row[1]}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br>
+<h2>Task 2:</h2>
+<table>
+    <tr>
+        <th>Country Label</th>
+        <th>Trade Deficit Value</th>
+        <th>Product Type</th>
+        <th>Status</th>
+    </tr>
+    {% for row in context.query2 %}
+    <tr>
+        <td>{{row[0]}}</td>
+        <td>{{row[1]}}</td>
+        <td>{{row[2]}}</td>
+        <td>{{row[3]}}</td>
+    </tr>
+    {% endfor %}
+</table>
+<br>
+<h2>Task 3:</h2>
+<table>
+    <tr>
+        <th>Service Label</th>
+        <th>Surplus Value</th>
+        </tr>
+    {% for row in context.query3 %}
+    <tr>
+        <td>{{row[0]}}</td>
+        <td>{{row[1]}}</td>
+    </tr>
+    {% endfor %}
+</table>
+</body>
+</html>

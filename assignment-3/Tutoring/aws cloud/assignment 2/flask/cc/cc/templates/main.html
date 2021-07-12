@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Main Page</title>
+    <link rel="stylesheet" type="text/css" href="{{url_for('static',filename='css/main.css') }}">
+</head>
+<body>
+<div>
+    <h2>Hi {{data.user_data.username}}</h2>
+    <a href="/logout/{{data.uid}}">Logout</a>
+</div>
+<hr>
+<div>
+    <h2>Music List:</h2>
+    {% if data.sub %}
+    <table>
+        <tr style="padding:5px;">
+            <th>Artist Image</th>
+            <th>Song Name</th>
+            <th>Artist Name</th>
+            <th>Year</th>
+            <th>URL</th>
+            <th>Unsubscribe</th>
+        </tr>
+        {% for s in data.sub %}
+        <tr style="padding:5px; border-bottom: 1px solid black;">
+            <td height="120px" width="120px"><img width="120px" height="120px"
+                                                  src="{{s.img_url}}"></td>
+            <td height="120px" width="120px">{{s.title}}</td>
+            <td height="120px" width="120px">{{s.artist}}</td>
+            <td height="120px" width="120px">{{s.year}}</td>
+            <td height="120px" width="120px"><a href="{{s.web_url}}">Song URL</a></td>
+            <td height="120px" width="120px"><a href="/unsub/{{data.uid}}/{{s.uid}}">Remove</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+</div>
+{% else %}
+<p>No songs subscribed yet!</p>
+{% endif %}
+</div>
+<div>
+    <div>
+        <form action="" method="post">
+            <h2>Search for your favourite music!</h2>
+            <div>
+                <input type="text" placeholder="title" name="title">
+            </div>
+            <div>
+                <input type="text" placeholder="year" name="year">
+            </div>
+            <div>
+                <input type="text" placeholder="artist" name="artist">
+            </div>
+            <div>
+                <button type="submit" value="query">Query</button>
+            </div>
+        </form>
+    </div>
+    <hr>
+    <div id="query-display">
+        {% if data.q_data %}
+        <table>
+            <tr style="padding:5px;">
+                <th>Artist Image</th>
+                <th>Song Name</th>
+                <th>Artist Name</th>
+                <th>Year</th>
+                <th>URL</th>
+                <th>Unsubscribe</th>
+            </tr>
+            {% for q in data.q_data %}
+            <tr style="padding:5px; border-bottom: 1px solid black;">
+                <td height="120px" width="120px"><img width="120px" height="120px"
+                                                      src="{{q.img_url}}"></td>
+                <td height="120px" width="120px">{{q.title}}</td>
+                <td height="120px" width="120px">{{q.artist}}</td>
+                <td height="120px" width="120px">{{q.year}}</td>
+                <td height="120px" width="120px"><a href="{{q.web_url}}">Song URL</a></td>
+                <td height="120px" width="120px"><a href="/sub/{{data.uid}}/{{q.uid}}">Subscribe</a></td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% else %}
+    <p>No result is retrieved. Please query again!</p>
+    {% endif %}
+</div>
+</body>
+</html>

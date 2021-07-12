@@ -1,0 +1,1 @@
+Let's say I have two lists, l1 and l2. I want to perform l1 - l2, which returns all elements of l1 not in l2.
