@@ -39,7 +39,7 @@ def init_boto3():
         if not assert_s3_bucket(s3_client):
             logger.debug('model.py assert_dynamo Unexpected error, try again END')
             return False
-    if 'music' not in existing_tables:
+    if 'music2' not in existing_tables:
         if not assert_dynamo_music_table(dynamodb_client, dynamodb_resource, s3_client):
             logger.debug('model.py assert_dynamo Unexpected error, try again END')
             return False
@@ -96,7 +96,7 @@ def insert_defaults_music_table(client, s3):
         img_url = item.get('img_url')
         img_url = download_all_images_from_json_to_bucket(s3, img_url, uid)
         client.put_item(
-            TableName='music',
+            TableName='music2',
             Item={
                 'id': {
                     'S': uid,
@@ -188,7 +188,7 @@ def assert_dynamo_music_table(client, resource, s3):
     logger.debug('model.py assert_dynamo_music_table BEGIN')
     logger.debug('model.py assert_dynamo_music_table Table does not exist')
     music_table = resource.create_table(
-        TableName='music',
+        TableName='music2',
         KeySchema=[
             {
                 'AttributeName': 'id',
@@ -206,7 +206,7 @@ def assert_dynamo_music_table(client, resource, s3):
             'WriteCapacityUnits': 5
         }
     )
-    client.get_waiter('table_exists').wait(TableName='music')
+    client.get_waiter('table_exists').wait(TableName='music2')
     logger.info('model.py assert_dynamo_music_table music table: %s', music_table)
     if music_table is None:
         logger.debug(
@@ -354,7 +354,7 @@ def query_music_table(title, year, artist):
     logger.debug('model.py query_music_table BEGIN')
     logger.info('model.py query_music_table title, year, artist: %s %s %s', title, year, artist)
     year = year if year is None else int(year)
-    table = boto3.resource('dynamodb').Table('music')
+    table = boto3.resource('dynamodb').Table('music2')
     response = table.scan(
         FilterExpression=(Attr('title').ne(title) if title is None else Attr('title').contains(title)) &
                          (Attr('year').ne(year) if year is None else Attr('year').eq(year)) &
@@ -430,7 +430,7 @@ def session_music_unsubscribe(session_id, music):
 
 def get_music_dict_from_sub_id(uid):
     logger.debug('model.py get_music_dict_from_sub_id BEGIN')
-    table = boto3.resource('dynamodb').Table('music')
+    table = boto3.resource('dynamodb').Table('music2')
     response = table.get_item(
         Key={
             'id': uid,
